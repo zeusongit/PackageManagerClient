@@ -6,27 +6,99 @@ using System.Configuration;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Xml;
 
 namespace Greg.Utility
 {
     public static class AppSettingMgr
     {
-        public static KeyValueConfigurationElement GetItem(String key)
+        private static XmlDocument debugDoc;
+
+        static AppSettingMgr()
         {
+            string configPath = $"{typeof(AppSettingMgr).Assembly.Location}.config";
+
+            if (!File.Exists(configPath)) return;
+
             try
             {
-                var dllPath = new Uri(Assembly.GetExecutingAssembly().GetName().CodeBase).LocalPath;
-                var config = ConfigurationManager.OpenExeConfiguration(dllPath);
-                var enableDebugLogsSetting = config.AppSettings.Settings[key];
-                return enableDebugLogsSetting;
+                debugDoc = new XmlDocument();
+                debugDoc.Load(configPath);
             }
-            catch(Exception ex)
+            catch(Exception ex) 
             {
-                Console.WriteLine("The referenced configuration item, {0}, could not be retrieved", key);
+                Console.WriteLine("The referenced configuration file, {0}, could not be loaded", configPath);
                 Console.WriteLine(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Returns null if the requested key was not found.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        internal static object GetConfigItem(String key)
+        {
+            string value = getItem(key);
+            if (value == null) {
+                return null;
+            }
+
+            try
+            {
+                switch (key)
+                {
+                    case "EnableDebugLogs":
+                        return bool.Parse(value);
+                    case "Timeout":
+                        return int.Parse(value);
+                    default:
+                        return null;
+                };
+            }
+            catch
+            {
                 return null;
             }
         }
+
+        /// <summary>
+        /// Reads the requested filed from the debug configuration document.
+        /// Returns null if the requested key does not exist.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        private static string getItem(String key)
+        {
+            if (debugDoc == null)
+                return null;
+
+            try
+            {
+                XmlNode node = debugDoc.SelectSingleNode("//appSettings");
+                if (node != null)
+                {
+                    XmlElement value = (XmlElement)node.SelectSingleNode(string.Format("//add[@key='{0}']", key));
+                    if (value != null)
+                    {
+                        return value.Attributes["value"].Value;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("The referenced configuration item, {0}, could not be retrieved", key);
+                Console.WriteLine(ex.Message);
+            }
+            return null;
+        }
+#if NETFRAMEWORK
+        [Obsolete]
+        public static KeyValueConfigurationElement GetItem(String key)
+        {
+            return new KeyValueConfigurationElement(key, getItem(key));
+        }
+#endif
     }
 
     public static class DebugLogger
@@ -39,8 +111,8 @@ namespace Greg.Utility
         {
             try
             {
-                var enableDebugLogsSetting = AppSettingMgr.GetItem("EnableDebugLogs");
-                if (enableDebugLogsSetting != null && Convert.ToBoolean(enableDebugLogsSetting.Value))
+                var enableDebugLogsSetting = AppSettingMgr.GetConfigItem("EnableDebugLogs");
+                if (enableDebugLogsSetting != null && Convert.ToBoolean(enableDebugLogsSetting))
                 {
                     enabled = true;
                 }

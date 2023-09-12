@@ -1,4 +1,4 @@
-![PackageManagerClient-VS2019Build](https://github.com/DynamoDS/PackageManagerClient/workflows/PackageManagerClient-VS2019Build/badge.svg)
+![PackageManagerClient-VS2022Build](https://github.com/DynamoDS/PackageManagerClient/workflows/PackageManagerClient-VS2022Build/badge.svg)
 # Dynamo Package Manager Client
 
 This repo is the package manager client for the Dynamo Package Manager.  Package Manager Client is designed to cover all of the capabilities of the Dynamo Package Manager.  
@@ -10,7 +10,7 @@ This repo is the package manager client for the Dynamo Package Manager.  Package
 * download a specific package header
 * download a specific package body
 * determine server connectivity
-* upvote or downvote a package
+* upvote or downvote a package, collect user votes
 * search across packages
 * deprecate a package
 * manage maintainers of a package

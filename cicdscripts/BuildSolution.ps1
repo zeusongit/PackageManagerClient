@@ -5,7 +5,7 @@ Purpose: To build Greg inside a windows docker container
 $ErrorActionPreference = "Stop"
 
 $errorMessage = "The build was not successful, check for errors"
-$dockerImage = "artifactory.dev.adskengineer.net/dynamo/desktop/buildtools/2019:1.1.1"
+$dockerImage = "artifactory.dev.adskengineer.net/dynamo/desktop/buildtools/2022:1.2.3"
 
 #Clear Nuget Cache	
 &"$env:WORKSPACE\$env:COMMON_TOOLS_DIR\$env:NUGETTOOL" locals all -clear
@@ -27,7 +27,7 @@ try {
     docker exec $env:DOCKER_CONTAINER $env:DOCKER_WORKSPACE\$env:COMMON_TOOLS_DIR\$env:NUGETTOOL restore $env:DOCKER_WORKSPACE\src\GregClient.sln
     
     # Build Greg solution
-    docker exec $env:DOCKER_CONTAINER msbuild -restore $env:DOCKER_WORKSPACE\src\GregClient.sln
+    docker exec $env:DOCKER_CONTAINER msbuild -restore $env:DOCKER_WORKSPACE\src\GregClient.sln /property:Configuration=Release
 
     if($LASTEXITCODE -ne 0) {
         throw $errorMessage
