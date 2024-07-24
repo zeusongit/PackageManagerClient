@@ -1,26 +1,16 @@
 version: 0.1.1
 env:
-  - JENKINS_NODE_WIN: "Dynamo_Win_Perf"
-  - SLACK_QUANTUM_BUILD_CHANNEL : "#dynamo-jenkinsbuild"
-  - SLACK_QUANTUM_BUILD_CREDENTIAL_ID : "slack-notify-token"
-  - MAIL_QUANTUM_BUILD_RECIPIENT : "dynamo.dev@autodesk.com"
-  - NUGETTOOL : "Nuget\\nuget.exe"
-  - NUNITTOOL : "NUnit\\NUnit.ConsoleRunner\\tools\\nunit3-console.exe"
-  - URL_REPO_TOOLS : "git.autodesk.com/Dynamo/CICDResources.git"
-  - BRANCH_TOOLS : "master"
+  - JENKINS_NODE_WIN: "DynamoWinBuild"
+  - SLACK_QUANTUM_BUILD_CHANNEL: "#dynamo-jenkinsbuild"
+  - SLACK_QUANTUM_BUILD_CREDENTIAL_ID: "slack-notify-token"
+  - MAIL_QUANTUM_BUILD_RECIPIENT: "dynamo.dev@autodesk.com"
   - NUGET_PUBLISH_SOURCE: "https://api.nuget.org/v3/index.json"
-  - COMMON_TOOLS_DIR : "CICDResources_shared"
-  - DOTCOVERTOOL : "DotCover\\JetBrains.dotCover.CommandLineTools\\tools\\dotCover.exe"
-  - SONARSCANTOOL : "SonarScannerMsbuild\\dotnet-framework-sonarscanner\\tools\\SonarScanner.MSBuild.exe"
-  - NUGET_SOURCES : "nuget.org"
-  - NUGET_CONFIG : "Config\\nuget.config"
-  
+
 check_changelog_updated_on_pr: false
 pipeline_os: "Windows"
-force_slack_notification : true
+force_slack_notification: true
 language: csharp
 use_garasign: true
-
 
 schedule:
   cron_schedule: "once_a_week"
@@ -33,47 +23,45 @@ jenkins_creds:
     -
      type: usernamePassword
      credentialsId: local-svc_p_ors
-     username: GITADSK_USERNAME 
+     username: GITADSK_USERNAME
      password: GITADSK_PASSWORD
 
 build:
   -
-    setup_proj_deps : true
+    setup_proj_deps: true
     solution: src\\GregClient.sln
     scripts:
-      - "pwsh.exe -ExecutionPolicy ByPass -File .\\cicdscripts\\DownloadCICDResources.ps1"
-      - "pwsh.exe -ExecutionPolicy ByPass -File .\\%COMMON_TOOLS_DIR%\\scripts\\SetupHost.ps1"
-      - "dotnet build src/gregClient.sln --configuration Release"
+      - "dotnet build --configuration Release src/GregClient.sln"
 ci_test:
   tests:
     -
       scripts:
-        - dotnet test src/GregClientTests/GregClientTests.csproj --logger:"junit;LogFilePath=testresults\\testresults.xml"
+        - dotnet coverage collect "dotnet test --no-build --configuration Release src/GregClient.sln --logger:junit --logger:trx" -f xml -o "coverage.xml"
 
-  test_report_dir: src\\GregClientTests\\testresults
+  test_report_dir: src\\GregClientTests\\TestResults
   test_report_pattern:
     format: "junit"
     pattern: "*.xml"
+
+code_analysis:
+  sonarqube:
+    useDotnetSonarScanner: true
+    scanOnAnyBranch: true
+    coverage_reports:
+      - coverage.xml
 
 soc2:
   harmony:
     hidden_email_list: dynamo_ws_access
     third_party_lib_paths:
-      - bin\Release\net8.0\
+      - bin\Release\net8.0
 
 deployment:
-  
-  -  
+  -
       type: sign
       files_to_sign:
         - "bin\\Release\\net8.0\\greg.dll"
   -
       type: customized
       scripts:
-          - "pwsh.exe -ExecutionPolicy ByPass -File .\\cicdscripts\\PublishPackage.ps1 -ReleaseBranches master"
-
-
-
-
-
-    
+        - "pwsh.exe -ExecutionPolicy ByPass -File .\\cicdscripts\\PublishPackage.ps1 -ReleaseBranches master"
